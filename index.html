@@ -34,7 +34,7 @@
       gap: 8px;
       align-items: center;
     }
-    #searchInput {
+    #searchInput, #limitInput {
       flex: 1;
       min-width: 120px;
       padding: 10px 12px;
@@ -232,6 +232,7 @@
 
 <div id="topBar">
   <input type="text" id="searchInput" placeholder="Search user">
+  <input type="number" id="limitInput" placeholder="Acc limit" style="width:90px;">
   <button id="searchBtn">Go</button>
   <button class="top-btn" onclick="copyCheckboxStates()">Copy</button>
   <button class="top-btn" onclick="pushToSheet(); resetCounter()">Reset</button>
@@ -426,10 +427,12 @@ currentCheckbox.onchange = () => {
 };
 
 function updateCounter() {
+  const limit = parseInt(document.getElementById("limitInput").value || "0");
   counterEl.textContent = counterValue;
-  counterEl.classList.toggle("green", counterValue === 20);
-  counterEl.classList.toggle("red", counterValue === 30);
+  // Turn red when counterValue reaches OR exceeds the limit
+  counterEl.classList.toggle("red", limit > 0 && counterValue >= limit);
 }
+
 
 async function pushToSheet() {
   const updates = currentUsers.map((u, i) => ({ username: u.username, checked: !!checkboxStates[i], row: i + 2 }));
