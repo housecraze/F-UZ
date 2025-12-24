@@ -889,7 +889,10 @@ async function rotateIP() {
   }
 }
 
-// FIXED: iOS Scamalytics - opens BEFORE any async calls
+// Scamalytics window reference - keep it global to reuse
+let scamWindow = null;
+
+// FIXED: iOS Scamalytics - reuses same tab
 function refreshAndOpen() {
   const btn = document.getElementById("refreshBtn");
   const fraudBox = document.getElementById("fraudBox");
@@ -902,10 +905,19 @@ function refreshAndOpen() {
   fraudScoreEl.textContent = "...";
   fraudRiskEl.textContent = "Loading";
 
-  // STEP 1: Open scamalytics IMMEDIATELY (before any async)
-  // Use last known IP or placeholder - iOS requires this to be synchronous
+  // STEP 1: Open/reuse scamalytics tab IMMEDIATELY (before any async)
   const ipToUse = userIP || 'check';
-  const scamWindow = window.open(`https://scamalytics.com/ip/${ipToUse}`, '_blank');
+  const scamUrl = `https://scamalytics.com/ip/${ipToUse}`;
+  
+  // Check if window exists and is still open
+  if (scamWindow && !scamWindow.closed) {
+    // Reuse existing window
+    scamWindow.location.href = scamUrl;
+    scamWindow.focus();
+  } else {
+    // Open new window with a name so we can reference it
+    scamWindow = window.open(scamUrl, 'scamalytics_window');
+  }
 
   // STEP 2: Now do async stuff
   fetch('https://api.ipify.org?format=json')
@@ -919,12 +931,12 @@ function refreshAndOpen() {
       userIP = currentIp;
       document.getElementById("ip").textContent = currentIp;
 
-      // Update the opened window with correct IP (if it loaded with wrong one)
-      if (scamWindow && ipToUse !== currentIp) {
+      // Update the opened window with correct IP if it changed
+      if (scamWindow && !scamWindow.closed && ipToUse !== currentIp) {
         try {
           scamWindow.location.href = `https://scamalytics.com/ip/${currentIp}`;
         } catch(e) {
-          // Cross-origin, can't update - but it's already open
+          // Cross-origin issue, ignore
         }
       }
 
