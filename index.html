@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>DYNAMIC F/U</title>
+  <title>IG Follow-Up Tracker</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Share+Tech+Mono&display=swap');
     
@@ -34,7 +34,7 @@
       gap: 8px;
       align-items: center;
     }
-    #searchInput, #limitInput, #rawApiInput {
+    #searchInput, #limitInput {
       flex: 1;
       min-width: 120px;
       padding: 10px 12px;
@@ -44,7 +44,7 @@
       border-radius: 8px;
       font-size: 14px;
     }
-    #searchBtn, #updateApiBtn {
+    #searchBtn {
       padding: 10px 16px;
       background: #0ff;
       color: #000;
@@ -52,6 +52,7 @@
       border-radius: 8px;
       font-weight: bold;
       font-size: 14px;
+      cursor: pointer;
     }
 
     h2 {
@@ -81,6 +82,7 @@
       font-size: 15px;
       border: 1px solid rgba(0,255,255,0.2);
       transition: all 0.2s;
+      cursor: pointer;
     }
     .user-row.highlight {
       background: rgba(0,255,255,0.25) !important;
@@ -144,6 +146,7 @@
       color: #0ff;
       border-radius: 12px;
       font-weight: bold;
+      cursor: pointer;
     }
     .nav-row button:active {
       background: #0ff;
@@ -153,6 +156,7 @@
     label input[type="checkbox"] {
       transform: scale(4.5);
       accent-color: #0ff;
+      cursor: pointer;
     }
 
     #floatingCounter {
@@ -181,16 +185,13 @@
       box-shadow: 0 0 30px #ff0000;
       transform: scale(1.1);
     }
-
     #floatingCounter.green {
-    background: #008000; /* Green background */
-    border-color: #006400; /* Darker green border */
-    color: #fff; /* White text */
-    box-shadow: 0 0 30px #006400; /* Darker green shadow */
-    transform: scale(1.1);
+      background: #008000;
+      border-color: #006400;
+      color: #fff;
+      box-shadow: 0 0 30px #006400;
+      transform: scale(1.1);
     }
-
-    
 
     #toast {
       position: fixed;
@@ -206,6 +207,7 @@
       z-index: 99999;
       opacity: 0;
       transition: opacity 0.4s;
+      pointer-events: none;
     }
     #toast.show { opacity: 1; }
 
@@ -225,6 +227,91 @@
       border-radius: 6px;
       font-size: 11px;
       white-space: nowrap;
+      cursor: pointer;
+    }
+    .top-btn.primary {
+      background: #0ff;
+      color: #000;
+      font-weight: bold;
+      border-color: #0ff;
+    }
+
+    /* Settings Modal */
+    #settingsModal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.9);
+      z-index: 99999;
+      align-items: center;
+      justify-content: center;
+    }
+    #settingsModal.show {
+      display: flex;
+    }
+    .modal-content {
+      background: #111;
+      border: 2px solid #0ff;
+      border-radius: 15px;
+      padding: 25px;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 0 30px rgba(0,255,255,0.5);
+    }
+    .modal-content h3 {
+      color: #0ff;
+      margin-bottom: 20px;
+      font-family: 'Orbitron', sans-serif;
+      text-align: center;
+      font-size: 22px;
+    }
+    .modal-content label {
+      display: block;
+      color: #0ff;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+    .modal-content input {
+      width: 100%;
+      padding: 12px;
+      background: #000;
+      border: 1px solid #0ff;
+      color: #0ff;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-bottom: 20px;
+      font-family: 'Share Tech Mono', monospace;
+    }
+    .modal-buttons {
+      display: flex;
+      gap: 10px;
+    }
+    .modal-buttons button {
+      flex: 1;
+      padding: 12px;
+      border: 2px solid #0ff;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .modal-buttons button.save {
+      background: #0ff;
+      color: #000;
+    }
+    .modal-buttons button.cancel {
+      background: transparent;
+      color: #0ff;
+    }
+    .api-status {
+      text-align: center;
+      margin-top: 10px;
+      font-size: 12px;
+      color: #888;
+    }
+    .api-status.connected {
+      color: #0f0;
     }
   </style>
 </head>
@@ -233,24 +320,16 @@
 <div id="topBar">
   <input type="text" id="searchInput" placeholder="Search user">
   <input type="number" id="limitInput" placeholder="Acc limit" style="width:90px;">
-
-<input type="text" 
-       id="rawApiInput" 
-       placeholder="https://script.google.com/macros/s/..." 
-       style="width: 600px;" 
-       value="">
-
-
-  <button class="top-btn" style="background:#0ff;color:#000;font-weight:bold">Go</button>
+  <button id="searchBtn">Go</button>
+  <button class="top-btn" onclick="openSettings()">⚙️ API</button>
   <button class="top-btn" onclick="copyCheckboxStates()">Copy</button>
   <button class="top-btn" onclick="pushToSheet(); resetCounter()">Reset</button>
   <button class="top-btn" onclick="generateList()">Fetch</button>
-  <button class="top-btn" onclick="runNextContainer()" style="background:#0ff;color:#000;font-weight:bold">Next Cont</button>
-  <button class="top-btn" onclick="updateApiUrl()" style="background:#0ff;color:#000;font-weight:bold">Update API</button>
+  <button class="top-btn primary" onclick="runNextContainer()">Next Cont</button>
 </div>
 
-<h2>DYNAMIC F/U</h2>
-<div id="userList">Loading...</div>
+<h2>IG Follow-Up Tracker</h2>
+<div id="userList">Click "⚙️ API" to configure, then "Fetch" to load data</div>
 
 <div id="navControls">
   <div id="currentUsername">—</div>
@@ -272,57 +351,21 @@
 <div id="floatingCounter">0</div>
 <div id="toast">Ready</div>
 
+<!-- Settings Modal -->
+<div id="settingsModal">
+  <div class="modal-content">
+    <h3>⚙️ API Configuration</h3>
+    <label>Google Apps Script URL:</label>
+    <input type="text" id="apiUrlInput" placeholder="https://script.google.com/macros/s/...">
+    <div class="api-status" id="apiStatus">Not configured</div>
+    <div class="modal-buttons">
+      <button class="cancel" onclick="closeSettings()">Cancel</button>
+      <button class="save" onclick="saveSettings()">Save</button>
+    </div>
+  </div>
+</div>
+
 <script>
-
-let API_URL = "";  // Your existing variable name – will be updated dynamically
-
-const RAW_KEY = "lastRawApiUrl";  // Key for localStorage
-const input = document.getElementById('rawApiInput');
-const status = document.getElementById('status');
-
-// Function to update API_URL and save to storage
-function updateApiUrl() {
-    const rawApi = input.value.trim();
-
-    if (!rawApi) {
-        status.textContent = "Please enter a URL";
-        status.style.color = "red";
-        return;
-    }
-
-    // Use corsproxy.io as before (it's still working well in late 2025)
-    API_URL = "https://corsproxy.io/?" + encodeURIComponent(rawApi);
-
-    // Save the raw URL (not the proxied one) for persistence
-    localStorage.setItem(RAW_KEY, rawApi);
-
-    status.textContent = "Saved & updated!";
-    status.style.color = "green";
-
-    console.log("API_URL is now:", API_URL);
-}
-
-// Load saved value on page load
-window.onload = function() {
-    const savedRaw = localStorage.getItem(RAW_KEY);
-    
-    if (savedRaw) {
-        input.value = savedRaw;
-        updateApiUrl();  // Sets API_URL immediately
-        status.textContent = "Loaded last URL";
-        status.style.color = "blue";
-    } else {
-        // Optional: pre-fill with your original default
-        input.value = "";
-        updateApiUrl();
-    }
-};
-
-// Update automatically as user types (or on blur for less frequent saves)
-input.addEventListener('input', updateApiUrl);  // Real-time update
-// Or use 'change' if you want to save only when they finish typing:
-// input.addEventListener('change', updateApiUrl);
-
 let currentUsers = [];
 let checkboxStates = {};
 let currentIndex = 0;
@@ -335,14 +378,47 @@ const currentNameEl = document.getElementById("currentUsername");
 const currentCheckbox = document.getElementById("currentCheckbox");
 const counterEl = document.getElementById("floatingCounter");
 
-// NEW: Auto-scroll to active user whenever it changes
-function scrollToActiveUser() {
-  const activeRow = document.querySelector(`.user-row input[data-index="${currentIndex}"]`)?.closest(".user-row");
-  if (activeRow) {
-    activeRow.scrollIntoView({ behavior: "smooth", block: "center" });
+// Get API URL from localStorage
+function getApiUrl() {
+  return localStorage.getItem("apiUrl") || "";
+}
+
+// Settings modal functions
+function openSettings() {
+  document.getElementById("apiUrlInput").value = getApiUrl();
+  updateApiStatus();
+  document.getElementById("settingsModal").classList.add("show");
+}
+
+function closeSettings() {
+  document.getElementById("settingsModal").classList.remove("show");
+}
+
+function saveSettings() {
+  const url = document.getElementById("apiUrlInput").value.trim();
+  if (!url) {
+    toast("❌ URL cannot be empty");
+    return;
+  }
+  localStorage.setItem("apiUrl", url);
+  updateApiStatus();
+  closeSettings();
+  toast("✅ API URL saved!");
+}
+
+function updateApiStatus() {
+  const status = document.getElementById("apiStatus");
+  const url = getApiUrl();
+  if (url) {
+    status.textContent = "✓ Connected";
+    status.className = "api-status connected";
+  } else {
+    status.textContent = "Not configured";
+    status.className = "api-status";
   }
 }
 
+// Search functionality
 document.getElementById("searchBtn").onclick = () => {
   const query = document.getElementById("searchInput").value.trim().toLowerCase();
   if (!query) return;
@@ -352,30 +428,55 @@ document.getElementById("searchBtn").onclick = () => {
     localStorage.setItem("currentIndex", currentIndex);
     updateCurrentView();
     toast(`→ ${currentUsers[currentIndex].username}`);
-  } else toast("Not found");
+  } else {
+    toast("Not found");
+  }
 };
+
 document.getElementById("searchInput").addEventListener("keypress", e => {
   if (e.key === "Enter") document.getElementById("searchBtn").click();
 });
 
+// Next container shortcut (iOS Shortcuts integration)
 function runNextContainer() {
   window.location.href = "shortcuts://run-shortcut?name=IG%20Switch";
 }
 
+// Fetch data from Google Sheets
 async function generateList() {
-  listContainer.innerHTML = "Fetching...";
-  let users = [];
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
-    const res = await fetch(API_URL, { signal: controller.signal });
-    clearTimeout(timeoutId);
-    users = await res.json();
-  } catch (e) {
-    listContainer.innerHTML = `<p style="color:red;">Failed: ${e.message}</p>`;
+  const apiUrl = getApiUrl();
+  
+  if (!apiUrl) {
+    listContainer.innerHTML = '<p style="color:red;">⚠️ Please configure API URL in settings (⚙️ API button)</p>';
+    toast("Configure API first!");
     return;
   }
-  if (!users?.length) { listContainer.innerHTML = "<p>No data</p>"; return; }
+
+  listContainer.innerHTML = "Fetching...";
+  let users = [];
+  
+  try {
+    const timestamp = new Date().getTime();
+    const urlWithCache = `${apiUrl}?t=${timestamp}`;
+    const proxiedUrl = "https://corsproxy.io/?" + encodeURIComponent(urlWithCache);
+    
+    const res = await fetch(proxiedUrl, {
+      method: "GET"
+    });
+    
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    users = await res.json();
+    
+  } catch (e) {
+    listContainer.innerHTML = `<p style="color:red;">Failed: ${e.message}</p>`;
+    toast("Failed to fetch data");
+    return;
+  }
+
+  if (!users?.length) {
+    listContainer.innerHTML = "<p>No data found</p>";
+    return;
+  }
 
   listContainer.innerHTML = "";
   currentUsers = users;
@@ -387,14 +488,20 @@ async function generateList() {
     row.className = "user-row";
 
     const cb = document.createElement("input");
-    cb.type = "checkbox"; cb.dataset.index = i;
+    cb.type = "checkbox";
+    cb.dataset.index = i;
     cb.checked = !!user.checked;
     checkboxStates[i] = !!user.checked;
 
     cb.addEventListener("change", () => {
       checkboxStates[i] = cb.checked;
-      if (cb.checked && !countedSet.has(i)) { counterValue++; countedSet.add(i); }
-      else if (!cb.checked && countedSet.has(i)) { counterValue--; countedSet.delete(i); }
+      if (cb.checked && !countedSet.has(i)) {
+        counterValue++;
+        countedSet.add(i);
+      } else if (!cb.checked && countedSet.has(i)) {
+        counterValue--;
+        countedSet.delete(i);
+      }
       updateCounter();
     });
 
@@ -408,8 +515,11 @@ async function generateList() {
 
     const btn = document.createElement("button");
     btn.textContent = "IG";
-    btn.style.padding = "4px 8px"; btn.style.fontSize = "11px";
-    btn.onclick = (e) => { e.stopPropagation(); window.open(`https://instagram.com/${user.username}`, "_blank"); };
+    btn.style.cssText = "padding:4px 8px;font-size:11px;background:#111;border:1px solid #0ff;color:#0ff;border-radius:4px;cursor:pointer";
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      window.open(`https://instagram.com/${user.username}`, "_blank");
+    };
 
     row.appendChild(cb);
     row.appendChild(btn);
@@ -429,85 +539,145 @@ async function generateList() {
   currentIndex = Math.min(parseInt(localStorage.getItem("currentIndex")) || 0, users.length - 1);
   updateCurrentView();
   updateCounter();
+  toast("Data loaded!");
 }
 
-// MODIFIED: Now scrolls to active user after every change
+// Scroll to active user
+function scrollToActiveUser() {
+  const activeRow = document.querySelector(`.user-row input[data-index="${currentIndex}"]`)?.closest(".user-row");
+  if (activeRow) {
+    activeRow.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+}
+
+// Update current view
 function updateCurrentView() {
   const user = currentUsers[currentIndex];
   currentNameEl.textContent = user?.username || "—";
   currentCheckbox.checked = !!checkboxStates[currentIndex];
+  
   document.querySelectorAll(".user-row").forEach(r => r.classList.remove("highlight"));
   const row = document.querySelector(`.user-row input[data-index="${currentIndex}"]`)?.closest(".user-row");
   if (row) row.classList.add("highlight");
   
-  scrollToActiveUser(); // ← THIS IS THE ONLY NEW LINE
+  scrollToActiveUser();
 }
 
+// Navigate to next user (skip those with "Skip" status)
 function nextUser() {
   if (!currentUsers.length) return;
   let start = currentIndex;
   do {
     currentIndex = (currentIndex + 1) % currentUsers.length;
   } while (currentUsers[currentIndex].status === "Skip" && currentIndex !== start);
+  
   if (currentUsers[currentIndex].status === "Skip") currentIndex = start;
   localStorage.setItem("currentIndex", currentIndex);
   updateCurrentView();
   setTimeout(openCurrentIG, 150);
 }
 
+// Navigate to previous user
 function prevUser() {
   if (!currentUsers.length) return;
   let start = currentIndex;
   do {
     currentIndex = currentIndex <= 0 ? currentUsers.length - 1 : currentIndex - 1;
   } while (currentUsers[currentIndex].status === "Skip" && currentIndex !== start);
+  
   if (currentUsers[currentIndex].status === "Skip") currentIndex = start;
   localStorage.setItem("currentIndex", currentIndex);
   updateCurrentView();
   setTimeout(openCurrentIG, 150);
 }
 
+// Open current user's Instagram
 function openCurrentIG() {
   const user = currentUsers[currentIndex];
-  if (user?.username) window.open(`https://instagram.com/${user.username}`, "_blank");
+  if (user?.username) {
+    window.open(`https://instagram.com/${user.username}`, "_blank");
+  }
 }
 
+// Handle checkbox change
 currentCheckbox.onchange = () => {
   const checked = currentCheckbox.checked;
   checkboxStates[currentIndex] = checked;
+  
   const listBox = document.querySelector(`.user-row input[data-index="${currentIndex}"]`);
   if (listBox) listBox.checked = checked;
-  if (checked && !countedNavChecks.has(currentIndex)) { counterValue++; countedNavChecks.add(currentIndex); }
-  else if (!checked && countedNavChecks.has(currentIndex)) { counterValue--; countedNavChecks.delete(currentIndex); }
+  
+  if (checked && !countedNavChecks.has(currentIndex)) {
+    counterValue++;
+    countedNavChecks.add(currentIndex);
+  } else if (!checked && countedNavChecks.has(currentIndex)) {
+    counterValue--;
+    countedNavChecks.delete(currentIndex);
+  }
   updateCounter();
 };
 
+// Update counter display
 function updateCounter() {
   const limit = parseInt(document.getElementById("limitInput").value || "0");
   counterEl.textContent = counterValue;
-  // Turn red when counterValue reaches OR exceeds the limit
-  counterEl.classList.toggle("red", limit > 0 && counterValue >= limit);
+  counterEl.classList.remove("red", "green");
+  
+  if (limit > 0 && counterValue >= limit) {
+    counterEl.classList.add("red");
+  }
 }
 
-
+// Push changes back to Google Sheets
 async function pushToSheet() {
-  const updates = currentUsers.map((u, i) => ({ username: u.username, checked: !!checkboxStates[i], row: i + 2 }));
-  try { await fetch(API_URL, { method: "POST", body: JSON.stringify(updates), headers: {"Content-Type": "application/json"} }); toast("Synced"); }
-  catch { toast("Failed"); }
+  const apiUrl = getApiUrl();
+  
+  if (!apiUrl) {
+    toast("Configure API first!");
+    return;
+  }
+
+  const updates = currentUsers.map((u, i) => ({
+    username: u.username,
+    checked: !!checkboxStates[i],
+    row: i + 2
+  }));
+
+  try {
+    const proxiedUrl = "https://corsproxy.io/?" + encodeURIComponent(apiUrl);
+    const res = await fetch(proxiedUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updates)
+    });
+    
+    if (res.ok) {
+      toast("✅ Synced");
+    } else {
+      throw new Error("Sync failed");
+    }
+  } catch (e) {
+    toast("❌ Sync failed");
+    console.error(e);
+  }
 }
 
+// Copy checkbox states to clipboard
 function copyCheckboxStates() {
-  const txt = currentUsers.map((u,i) => checkboxStates[i] ? "TRUE" : "FALSE").join("\n");
-  navigator.clipboard.writeText(txt).then(() => toast("Copied!"));
+  const txt = currentUsers.map((u, i) => checkboxStates[i] ? "TRUE" : "FALSE").join("\n");
+  navigator.clipboard.writeText(txt).then(() => toast("📋 Copied!"));
 }
 
+// Reset counter
 function resetCounter() {
   counterValue = 0;
   countedNavChecks.clear();
   countedSet.clear();
   updateCounter();
+  toast("Counter reset");
 }
 
+// Toast notification
 function toast(msg) {
   const t = document.getElementById("toast");
   t.textContent = msg;
@@ -515,6 +685,7 @@ function toast(msg) {
   setTimeout(() => t.className = "", 2500);
 }
 
+// Check if Instagram account exists
 async function checkIG() {
   const box = document.getElementById("igStatusBox");
   box.style.backgroundColor = "gray";
@@ -526,7 +697,6 @@ async function checkIG() {
   }
 
   try {
-    // This endpoint is public, no login needed, and returns 200 ONLY if username exists
     const res = await fetch(`https://www.instagram.com/api/v1/users/web_profile_info/?username=${username}`, {
       method: "GET",
       headers: {
@@ -539,20 +709,18 @@ async function checkIG() {
 
     if (res.status === 200) {
       const data = await res.json();
-      if (data?.data?.user?.id) {
-        box.style.backgroundColor = "lime";   // EXISTS
-      } else {
-        box.style.backgroundColor = "red";    // DOES NOT EXIST
-      }
+      box.style.backgroundColor = data?.data?.user?.id ? "lime" : "red";
     } else {
-      box.style.backgroundColor = "red";      // 404 or blocked
+      box.style.backgroundColor = "red";
     }
   } catch (e) {
     box.style.backgroundColor = "red";
   }
 }
+
+// Initialize
 updateCounter();
-window.onload = generateList;
+updateApiStatus();
 </script>
 </body>
 </html>
