@@ -242,7 +242,7 @@
 </head>
 <body>
 
-  <div class="header">JAYNE X SAM INSTAGRAM TOOL</div>
+  <div class="header">INSTAGRAM MANAGER TOOL</div>
 
   <!-- API Configuration Card -->
   <div class="glass-card">
@@ -409,6 +409,7 @@
       <div class="floating-btn" style="background:linear-gradient(135deg,#ffb300,#6a1b9a)" onclick="copyText('username'); openCurrentIG()">👤</div>
       <div class="floating-btn" style="background:linear-gradient(135deg,#e91e63,#6a1b9a,#ffb300)" onclick="copyText('password'); openCurrentIG()">🗝️</div>
       <div class="floating-btn" style="background:linear-gradient(135deg,#8e24aa,#e91e63)" onclick="copyText('username'); Createcon()">✍️</div>
+      <div class="floating-btn" style="background:linear-gradient(135deg,#8e24aa,#e91e63)" onclick="copyText('username'); CreateconNum()">🔢</div>
     </div>
   </div>
 
@@ -418,8 +419,8 @@
     <div id="utilityButtons">
       <div class="floating-btn" style="background:#ff4081" onclick="loadProfiles()">🔄️</div>
       <div class="floating-btn" style="background:#3949ab" onclick="randomCelebrity()">🎲</div>
-      <div class="floating-btn" style="background:#8e24aa" onclick="randomBio()">🌸</div>
-      <div class="floating-btn" style="background:#00897b" onclick="randomCaption()">📝</div>
+      <div class="floating-btn" style="background:#8e24aa" onclick="randomBio(); openCurrentIG()">🌸</div>
+      <div class="floating-btn" style="background:#00897b" onclick="randomCaption(); openCurrentIG()">📝</div>
       <div class="floating-btn" style="background:#ff8f00" onclick="firstProfile()">🥇</div>
       <div class="floating-btn" style="background:#43a047" onclick="showProfileList()">📂</div>
     </div>
@@ -892,7 +893,19 @@ async function rotateIP() {
 // Scamalytics window reference - keep it global to reuse
 let scamWindow = null;
 
-// FIXED: iOS Scamalytics - reuses same tab
+// Function to open/reuse scamalytics window
+function openScamalytics(ip) {
+  const scamUrl = `https://scamalytics.com/ip/${ip}`;
+  
+  if (scamWindow && !scamWindow.closed) {
+    scamWindow.location.href = scamUrl;
+    scamWindow.focus();
+  } else {
+    scamWindow = window.open(scamUrl, 'scamalytics_window');
+  }
+}
+
+// FIXED: iOS Scamalytics - reuses same tab, opens on API error too
 function refreshAndOpen() {
   const btn = document.getElementById("refreshBtn");
   const fraudBox = document.getElementById("fraudBox");
@@ -905,21 +918,17 @@ function refreshAndOpen() {
   fraudScoreEl.textContent = "...";
   fraudRiskEl.textContent = "Loading";
 
-  // STEP 1: Open/reuse scamalytics tab IMMEDIATELY (before any async)
-  const ipToUse = userIP || 'check';
-  const scamUrl = `https://scamalytics.com/ip/${ipToUse}`;
-  
-  // Check if window exists and is still open
-  if (scamWindow && !scamWindow.closed) {
-    // Reuse existing window
-    scamWindow.location.href = scamUrl;
-    scamWindow.focus();
-  } else {
-    // Open new window with a name so we can reference it
-    scamWindow = window.open(scamUrl, 'scamalytics_window');
+  const username = getConfig('fraudUser');
+  const key = getConfig('fraudKey');
+  const hasApiKey = username && key;
+
+  // If NO API key, open scamalytics immediately (before async)
+  if (!hasApiKey) {
+    const ipToUse = userIP || 'check';
+    openScamalytics(ipToUse);
   }
 
-  // STEP 2: Now do async stuff
+  // Now do async stuff
   fetch('https://api.ipify.org?format=json')
     .then(res => res.json())
     .then(ipData => {
@@ -931,63 +940,61 @@ function refreshAndOpen() {
       userIP = currentIp;
       document.getElementById("ip").textContent = currentIp;
 
-      // Update the opened window with correct IP if it changed
-      if (scamWindow && !scamWindow.closed && ipToUse !== currentIp) {
-        try {
-          scamWindow.location.href = `https://scamalytics.com/ip/${currentIp}`;
-        } catch(e) {
-          // Cross-origin issue, ignore
-        }
-      }
-
-      // Try API check
-      const username = getConfig('fraudUser');
-      const key = getConfig('fraudKey');
-
-      if (!username || !key) {
+      // If no API key, just update the scamalytics window with correct IP
+      if (!hasApiKey) {
+        openScamalytics(currentIp);
         fraudScoreEl.textContent = "—";
         fraudRiskEl.textContent = "No API key";
         btn.disabled = false;
         btn.innerHTML = oldText;
-        return;
+        return Promise.resolve(null);
       }
 
+      // Try API check
       const apiUrl = `https://api11.scamalytics.com/v3/${username}?key=${key}&ip=${currentIp}&format=json`;
       const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(apiUrl)}`;
       
-      return fetch(proxyUrl);
-    })
-    .then(response => {
-      if (!response) return null;
-      if (!response.ok) throw new Error("API error");
-      return response.json();
-    })
-    .then(data => {
-      if (!data) return;
-      
-      if (data.scamalytics?.status !== 'ok') {
-        throw new Error("Bad response");
-      }
+      return fetch(proxyUrl)
+        .then(response => {
+          if (!response.ok) throw new Error("API error");
+          return response.json();
+        })
+        .then(data => {
+          if (data.scamalytics?.status !== 'ok' || data.scamalytics?.error) {
+            throw new Error("Bad response");
+          }
 
-      const score = data.scamalytics.scamalytics_score;
-      const risk = data.scamalytics.scamalytics_risk || "Unknown";
-      const credits = data.scamalytics.credits?.remaining ?? "?";
+          const score = data.scamalytics.scamalytics_score;
+          const risk = data.scamalytics.scamalytics_risk || "Unknown";
+          const credits = data.scamalytics.credits?.remaining ?? "?";
 
-      fraudScoreEl.textContent = score;
-      fraudRiskEl.innerHTML = `${risk}<br><span style="font-size:7px;opacity:0.7;">${credits} left</span>`;
+          fraudScoreEl.textContent = score;
+          fraudRiskEl.innerHTML = `${risk}<br><span style="font-size:7px;opacity:0.7;">${credits} left</span>`;
 
-      let bg, border;
-      if (score <= 25) { bg = "rgba(0,70,0,0.95)"; border = "#0f9"; }
-      else if (score <= 60) { bg = "rgba(90,60,0,0.95)"; border = "#ff9800"; }
-      else { bg = "rgba(90,0,0,0.95)"; border = "#f55"; }
+          let bg, border;
+          if (score <= 25) { bg = "rgba(0,70,0,0.95)"; border = "#0f9"; }
+          else if (score <= 60) { bg = "rgba(90,60,0,0.95)"; border = "#ff9800"; }
+          else { bg = "rgba(90,0,0,0.95)"; border = "#f55"; }
 
-      fraudBox.style.background = bg;
-      fraudBox.style.borderColor = border;
+          fraudBox.style.background = bg;
+          fraudBox.style.borderColor = border;
+        })
+        .catch(err => {
+          // API FAILED - Open scamalytics as fallback!
+          console.error("API failed, opening scamalytics:", err);
+          openScamalytics(currentIp);
+          
+          fraudScoreEl.textContent = "!";
+          fraudRiskEl.textContent = "API Error";
+          fraudBox.style.background = "rgba(90,0,0,0.95)";
+          fraudBox.style.borderColor = "#f33";
+        });
     })
     .catch(err => {
+      // IP fetch failed
       console.error(err);
       fraudScoreEl.textContent = "!";
-      fraudRiskEl.textContent = "Error";
+      fraudRiskEl.textContent = "Network Error";
       fraudBox.style.background = "rgba(90,0,0,0.95)";
     })
     .finally(() => {
@@ -1058,9 +1065,19 @@ function Createcon() {
   }
   window.location.href = "shortcuts://run-shortcut?name=CreateIGCon";
 }
+function CreateconNum() {
+  const container = document.getElementById('container').textContent.trim();
+  const username = document.getElementById('username').textContent.trim();
+  const combined = container;
+  if (combined.trim()) {
+    navigator.clipboard.writeText(combined);
+    showToast("Copied!");
+  }
+  window.location.href = "shortcuts://run-shortcut?name=CreateIGCon";
+}
 
 function runCont() {
-  window.location.href = "shortcuts://run-shortcut?name=NextIGTH";
+  window.location.href = "shortcuts://run-shortcut?name=IG%20Switch";
 }
 
 function openCurrentIG() {
